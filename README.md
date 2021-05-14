@@ -1,23 +1,12 @@
-# CodeGra.plag
-This repository contains CodeGra.plag that makes it possible to create PDGs for
-Python code. This research was done as the bachelor thesis of Thomas Schaper,
-and was presented at [CompSys2018](https://www.aanmelder.nl/101005) where it
-received a Outstanding Contribution award.
+# PDG generator
+Библиотека генерации program dependence graph для программ на языке Python.  
+Автор - Thomas Schaper, представлена на [CompSys2018](https://www.aanmelder.nl/101005)
 
-# Usage
-This can only be run by python versions >=3.6, the dependencies can be found in
-requirements.txt.
+## Использование
+python >= 3.6
+```bash
+pip3 install -r requirements.txt
+parser.py input_file.py > output_file.dot
+```
 
-The most important function in this project is `create_pdg` that creates a PDG
-for a AST (created by the `ast` module). This function returns a graph (see
-`graph.py`) and can be rendered to DOT by calling the `to_dot` method.
-
-# Acknowledgments
-- Dr. Ana Lucia Varbanescu, for the enormous help during the bachelor thesis.
-- Olmo Kramer, for the discussion during and before the project.
-
-# Authors
-- Thomas Schaper
-
-# License
-This project is licensed under AGPL - see the LICENSE file for details
+По программе на языке Python порождает граф зависимостей в формате dot - каждой функции исходного файла соответствует подграф.
