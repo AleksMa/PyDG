@@ -5,7 +5,7 @@ from contextlib import contextmanager
 
 import astor  # type: ignore
 
-from . import graph
+import graph
 
 
 class CDGNode(graph.Node):

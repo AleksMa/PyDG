@@ -4,7 +4,7 @@
 import ast
 import typing as t
 
-from . import cdg, ddg, simplify
+import ddg, cdg, simplify
 
 PDG = t.NewType('PDG', cdg.CDG)
 

@@ -7,7 +7,7 @@ import ast
 import fnmatch
 import os
 
-from codegra_plag import cdg, graph, pdg
+import cdg, graph, pdg
 
 def find_files(directory, pattern):
     """Find all files in a directory that comply to the specify pattern.
