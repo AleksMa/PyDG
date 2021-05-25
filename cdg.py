@@ -10,8 +10,13 @@ import graph
 
 class CDGNode(graph.Node):
     def __init__(self, orig: t.Union[ast.stmt, ast.ExceptHandler],
-                 label: str) -> None:
-        super().__init__(label)
+                 label: str, lineno=-1, end_lineno=-1) -> None:
+        lines="$"+str(lineno)
+        if end_lineno != -1:
+            lines += ":"+str(end_lineno)
+        else:
+            lines += ":"+str(lineno)
+        super().__init__(label+lines)
         self.orig = orig
 
 
@@ -84,8 +89,10 @@ class CDGRegionNode(CDGNode):
         name: t.Optional[str]=None,
         extra: t.Optional[str]=None,
         stmt: t.Optional[ast.stmt]=None,
+        lineno=-1,
+        end_lineno=-1,
     ) -> None:
-        super().__init__(orig, name or str(type))
+        super().__init__(orig, name or str(type), lineno=lineno, end_lineno=end_lineno)
         self.breaks: t.List[CDGNode] = []
         self.type = type
         self.extra = extra
@@ -156,10 +163,10 @@ def create_cdg_try(
     exit_node: CDGRegionNode,
     res_graph: CDG,
 ) -> CDGNode:
-    top_node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.try_block)
+    top_node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.try_block, lineno=stmt.lineno)
     with cdg_stack.pushed(top_node):
         with cdg_stack.pushed(
-            CDGRegionNode(ast.Pass(), CDGRegionNodeType.try_body)
+            CDGRegionNode(ast.Pass(), CDGRegionNodeType.try_body, lineno=stmt.lineno)
         ):
             process_block(stmt.body, cdg_stack, exit_node, res_graph)
 
@@ -183,7 +190,7 @@ def create_cdg_try(
                 label = 'Except'
 
             node = CDGRegionNode(
-                handler, CDGRegionNodeType.except_block, label
+                handler, CDGRegionNodeType.except_block, label, lineno=handler.lineno
             )
             with cdg_stack.pushed(node, 'Except {}'.format(t)):
                 process_block(handler.body, cdg_stack, exit_node, res_graph)
@@ -191,7 +198,7 @@ def create_cdg_try(
             cdg_stack.connect_to_next = []
 
         if stmt.orelse:
-            node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.else_block)
+            node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.else_block, lineno=stmt.lineno)
             for else_node in to_else:
                 res_graph.add_edge(CDGEdge(else_node, node, None))
             with cdg_stack.pushed(node, 'No exception'):
@@ -202,7 +209,7 @@ def create_cdg_try(
             to_finally.extend(to_else)
 
         if stmt.finalbody:
-            node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.finally_block)
+            node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.finally_block, lineno=stmt.lineno)
             for f_node in to_finally:
                 res_graph.add_edge(CDGEdge(f_node, node, None))
             with cdg_stack.pushed(node, 'Finally'):
@@ -262,16 +269,16 @@ def create_cdg_loop(
             astor.to_source(loop.iter).strip()
         )
 
-    loop_block = CDGRegionNode(loop, CDGRegionNodeType.loop_block, name)
+    loop_block = CDGRegionNode(loop, CDGRegionNodeType.loop_block, name, lineno=loop.lineno)
     with stack.pushed(loop_block):
-        loop_body = CDGRegionNode(ast.Pass(), CDGRegionNodeType.loop_body)
+        loop_body = CDGRegionNode(ast.Pass(), CDGRegionNodeType.loop_body, lineno=loop.lineno)
         res_graph.add_edge(graph.Edge(loop_body, loop_block, None))
         with stack.pushed(loop_body, label):
             process_block(loop.body, stack, exit_node, res_graph)
 
     if loop.orelse:
         with stack.pushed(
-            CDGRegionNode(ast.Pass(), CDGRegionNodeType.else_block)
+            CDGRegionNode(ast.Pass(), CDGRegionNodeType.else_block, lineno=loop.lineno)
         ):
             process_block(loop.orelse, stack, exit_node, res_graph)
 
@@ -297,9 +304,11 @@ def create_cdg_stmt(
                 stmt.name, astor.to_source(stmt.args).strip()
             ),
             extra=astor.to_source(stmt),
-            stmt=stmt
+            stmt=stmt,
+            lineno=stmt.body[0].lineno,
+            end_lineno=stmt.body[-1].lineno
         )
-        exit_node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.exit)
+        exit_node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.exit, lineno=stmt.body[0].lineno, end_lineno=stmt.body[-1].lineno)
         with stack.pushed(enter):
             process_block(
                 stmt.body,
@@ -320,12 +329,12 @@ def create_cdg_stmt(
         create_cdg_class(stmt, res_graph)
         return None
     elif isinstance(stmt, ast.Continue):
-        node = CDGNode(stmt, 'Continue')
+        node = CDGNode(stmt, 'Continue', lineno=stmt.lineno)
         res_graph.add_edge(CDGEdge(node, stack.get_loop(1), None))
         stack.add_node(node)
         return node
     elif isinstance(stmt, ast.Break):
-        node = CDGNode(stmt, 'Break')
+        node = CDGNode(stmt, 'Break', lineno=stmt.lineno)
 
         try:
             loop = stack.get_loop(2)
@@ -337,17 +346,17 @@ def create_cdg_stmt(
         stack.add_node(node)
         return node
     elif isinstance(stmt, ast.Return):
-        node = CDGNode(stmt, astor.to_source(stmt).strip())
+        node = CDGNode(stmt, astor.to_source(stmt).strip(), lineno=stmt.lineno)
         stack.add_node(node)
         res_graph.add_edge(CDGEdge(node, exit_node, None))
         return node
     elif isinstance(stmt, ast.Raise):
-        node = CDGNode(stmt, astor.to_source(stmt).strip())
+        node = CDGNode(stmt, astor.to_source(stmt).strip(), lineno=stmt.lineno)
         stack.add_node(node)
         res_graph.add_edge(CDGEdge(node, exit_node, None))
         return node
     elif isinstance(stmt, ast.Assert):
-        node = CDGNode(stmt, astor.to_source(stmt).strip())
+        node = CDGNode(stmt, astor.to_source(stmt).strip(), lineno=stmt.lineno)
         stack.add_node(node)
         res_graph.add_edge(CDGEdge(node, exit_node, 'F'))
         return node
@@ -366,22 +375,23 @@ def create_cdg_stmt(
             ast.AnnAssign  # type: ignore
         )
     ):
-        node = CDGNode(stmt, astor.to_source(stmt).strip())
+        node = CDGNode(stmt, astor.to_source(stmt).strip(), lineno=stmt.lineno, end_lineno=stmt.end_lineno)
         stack.add_node(node)
         return node
     elif isinstance(stmt, ast.If):
         node = CDGRegionNode(
             stmt, CDGRegionNodeType.if_block,
-            'If {}'.format(astor.to_source(stmt.test).strip())
+            'If {}'.format(astor.to_source(stmt.test).strip()),
+            lineno=stmt.lineno
         )
         with stack.pushed(node):
             with stack.pushed(
-                CDGRegionNode(ast.Pass(), CDGRegionNodeType.then_block), 'T'
+                CDGRegionNode(ast.Pass(), CDGRegionNodeType.then_block, lineno=stmt.lineno, end_lineno=stmt.end_lineno), 'T'
             ):
                 process_block(stmt.body, stack, exit_node, res_graph)
             if stmt.orelse:
                 with stack.pushed(
-                    CDGRegionNode(ast.Pass(), CDGRegionNodeType.else_block),
+                    CDGRegionNode(ast.Pass(), CDGRegionNodeType.else_block, lineno=stmt.lineno, end_lineno=stmt.end_lineno),
                     'F'
                 ):
                     process_block(stmt.orelse, stack, exit_node, res_graph)
@@ -393,9 +403,10 @@ def create_cdg_stmt(
             stmt, 'With {}'.format(
                 ', '.
                 join(astor.to_source(item).strip() for item in stmt.items)
-            )
+            ),
+            lineno=stmt.lineno
         )
-        with stack.pushed(CDGRegionNode(stmt, CDGRegionNodeType.with_block)):
+        with stack.pushed(CDGRegionNode(stmt, CDGRegionNodeType.with_block, lineno=stmt.lineno)):
             process_block(
                 stmt.body,
                 stack,
