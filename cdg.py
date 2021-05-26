@@ -306,7 +306,7 @@ def create_cdg_stmt(
             extra=astor.to_source(stmt),
             stmt=stmt,
             lineno=stmt.body[0].lineno,
-            end_lineno=stmt.body[-1].lineno
+            end_lineno=stmt.body[0].lineno
         )
         exit_node = CDGRegionNode(ast.Pass(), CDGRegionNodeType.exit, lineno=stmt.body[0].lineno, end_lineno=stmt.body[-1].lineno)
         with stack.pushed(enter):
@@ -382,7 +382,8 @@ def create_cdg_stmt(
         node = CDGRegionNode(
             stmt, CDGRegionNodeType.if_block,
             'If {}'.format(astor.to_source(stmt.test).strip()),
-            lineno=stmt.lineno
+            lineno=stmt.lineno,
+            end_lineno=stmt.end_lineno
         )
         with stack.pushed(node):
             with stack.pushed(
