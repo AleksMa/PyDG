@@ -30,7 +30,7 @@ def get_pdgs(f_name):
         with open(f_name, 'r') as f:
             tree = ast.parse(f.read())
     except Exception as e:
-        print('Invalid syntax in', f, e)
+        print('Invalid syntax in', f_name, e)
     else:
         cur_pdg = pdg.create_pdg(tree)
         cur_pdg.remove_useless_nodes()
