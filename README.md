@@ -1,12 +1,12 @@
 # PDG generator
-Библиотека генерации program dependence graph для программ на языке Python.  
-Автор - Thomas Schaper, представлена на [CompSys2018](https://www.aanmelder.nl/101005)
+Библиотека генерации графа зависимости программ (program dependence graph) для языка Python 3.  
+Автор инструментария - Thomas Schaper
 
 ## Использование
-python >= 3.6
+python >= 3.8
 ```bash
 pip3 install -r requirements.txt
 parser.py input_file.py > output_file.dot
 ```
 
-По программе на языке Python порождает граф зависимостей в формате dot - каждой функции исходного файла соответствует подграф.
+По программе на языке Python порождает граф зависимости в формате dot - каждой функции исходного файла соответствует подграф.
