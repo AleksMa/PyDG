@@ -271,8 +271,8 @@ def create_cdg_loop(
     end_lineno = -1
     if hasattr(loop, 'lineno'):
         lineno = loop.lineno
-    if hasattr(loop, 'end_lineno'):
-        end_lineno = loop.end_lineno
+    # if hasattr(loop, 'end_lineno'):
+    #     end_lineno = loop.end_lineno
     loop_block = CDGRegionNode(loop, CDGRegionNodeType.loop_block, name, lineno=lineno, end_lineno=end_lineno)
     with stack.pushed(loop_block):
         loop_body = CDGRegionNode(ast.Pass(), CDGRegionNodeType.loop_body, lineno=lineno, end_lineno=end_lineno)
@@ -305,8 +305,8 @@ def create_cdg_stmt(
         end_lineno = -1
         if hasattr(stmt, 'lineno'):
             lineno = stmt.lineno
-        if hasattr(stmt, 'end_lineno'):
-            end_lineno = stmt.end_lineno
+        # if hasattr(stmt, 'end_lineno'):
+        #     end_lineno = stmt.end_lineno
 
         enter = CDGRegionNode(
             stmt,

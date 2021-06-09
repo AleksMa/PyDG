@@ -615,8 +615,8 @@ def create_slice_ddg(
             create_expr_ddg(
                 s.step, def_map, res_graph, cur_stmt, options, True
             )
-    else:
-        assert False
+    # else:
+        # assert False
 
 
 def create_expr_ddg(
